@@ -13,7 +13,6 @@ import java.util.HashSet;
 import java.util.Set;
 
 import junit.framework.Assert;
-import net.mw.featureworkingset.CreateWorkingSetsHandler;
 
 import org.eclipse.core.internal.resources.XMLWriter;
 import org.eclipse.core.resources.IContainer;
@@ -241,7 +240,6 @@ public class UpdateWorkingSetTest {
 	@BeforeClass
 	public static void beforeClass() {
 		// load bundle
-		new CreateWorkingSetsHandler();
 	}
 
 	@Before
