@@ -16,6 +16,11 @@
       [Enter License Description here.]
    </license>
 
+   <requires>
+      <import feature="org.eclipse.jdt" version="3.7" match="greaterOrEqual"/>
+      <import feature="org.eclipse.pde" version="3.7" match="greaterOrEqual"/>
+   </requires>
+
    <plugin
          id="net.mw.featureworkingset"
          download-size="0"
