@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<site>
+   <feature url="features/net.mw.featureworkingset.feature_1.0.0.qualifier.jar" id="net.mw.featureworkingset.feature" version="1.0.0.qualifier">
+      <category name="net.mw.tools.pde"/>
+   </feature>
+   <category-def name="net.mw.tools.pde" label="Additional PDE Tools"/>
+</site>
