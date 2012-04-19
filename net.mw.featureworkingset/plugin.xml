@@ -63,7 +63,7 @@
          point="org.eclipse.ui.workingSets">
       <workingSet
             description="A working set created from the contents of an eclipse feature."
-            elementAdapterClass="org.eclipse.jdt.internal.ui.workingsets.JavaWorkingSetElementAdapter"
+            elementAdapterClass="net.mw.featureworkingset.FeatureWorkingSetElementAdapter"
             icon="icons/feature_workset_obj.png"
             id="net.mw.featureworkingset"
             name="FeatureWorkingSet"
