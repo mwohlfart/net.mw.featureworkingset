@@ -8,8 +8,6 @@
 package net.mw.featureworkingset;
 
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Iterator;
 import java.util.List;
 
 import org.eclipse.core.resources.IFile;
@@ -18,100 +16,152 @@ import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IResourceDelta;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.jdt.core.ElementChangedEvent;
 import org.eclipse.jdt.core.IElementChangedListener;
-import org.eclipse.jdt.core.IJavaElement;
-import org.eclipse.jdt.core.IJavaElementDelta;
-import org.eclipse.jdt.core.IJavaProject;
 import org.eclipse.jdt.core.JavaCore;
+import org.eclipse.jface.util.IPropertyChangeListener;
+import org.eclipse.jface.util.PropertyChangeEvent;
 import org.eclipse.ui.IWorkingSet;
+import org.eclipse.ui.IWorkingSetManager;
 import org.eclipse.ui.IWorkingSetUpdater;
+import org.eclipse.ui.PlatformUI;
 
 
 public class FeatureWorkingSetUpdater implements IWorkingSetUpdater, IElementChangedListener {
 
-	private List<IWorkingSet> fWorkingSets;
+	private interface IFeatureWorkingSet {
+		
+		public IWorkingSet getWorkingSet();
+		
+		String getWorkingSetName();
 
-	private static class WorkingSetDelta {
-		private IWorkingSet fWorkingSet;
-		private List<IAdaptable> fElements;
-		private boolean fChanged;
-		public WorkingSetDelta(IWorkingSet workingSet) {
-			fWorkingSet= workingSet;
-			fElements= new ArrayList<IAdaptable>(Arrays.asList(workingSet.getElements()));
-		}
-		public int indexOf(Object element) {
-			return fElements.indexOf(element);
-		}
-		public void set(int index, IAdaptable element) {
-			fElements.set(index, element);
-			fChanged= true;
-		}
-		public void remove(int index) {
-			if (fElements.remove(index) != null) {
-				fChanged= true;
+		public IProject getFeatureProject();
+		
+		public IProject[] getChildren();
+	}
+	
+	private List<IFeatureWorkingSet> fWorkingSets;
+	
+	private static IFeatureWorkingSet createWorkingSet(final IWorkingSet workingSet) {
+		
+		IFeatureWorkingSet result = new IFeatureWorkingSet() {
+			
+			@Override
+			public IWorkingSet getWorkingSet() {
+				return workingSet;
 			}
-		}
-		public void process() {
-			if (fChanged) {
-				fWorkingSet.setElements(fElements.toArray(new IAdaptable[fElements.size()]));
+			
+			@Override
+			public String getWorkingSetName() {
+				return workingSet.getName();
 			}
-		}
+			
+			@Override
+			public IProject getFeatureProject() {
+				return FeatureWorkingSetUpdater.getFeatureProject(workingSet);
+			}
+			
+			@Override
+			public IProject[] getChildren() {
+				IProject featureProject = getFeatureProject();
+				
+				if (!featureProject.exists()) {
+					return new IProject[] {};
+				}
+				
+				if (!featureProject.isOpen()) {
+					return new IProject[] {};
+				}
+				
+				try {
+					return FeatureWorkingSetUtil.getIncludedPluginProjects(featureProject);
+				} catch (CoreException e) {
+					FeatureWorkingSetPlugin.getDefault().getLog().log(e.getStatus());
+					return new IProject[] {};
+				}
+			}
+		};
+		
+		return result;
+	}
+
+	private static IProject getFeatureProject(final IWorkingSet workingSet) {
+		String featureId = workingSet.getName();
+		final IProject featureProject = ResourcesPlugin.getWorkspace().getRoot().getProject(featureId);
+		return featureProject;
+	}
+
+	private static void updateFeatureWorkingSet(IFeatureWorkingSet featureWorkingSet) {
+		IProject[] children = featureWorkingSet.getChildren();
+		featureWorkingSet.getWorkingSet().setElements(children);
+	}
+
+	private static boolean isFeatureFileChange(IResource resource, int kind) {
+		return kind == IResourceDelta.CHANGED && (resource instanceof IFile) && ((IFile)resource).getName().equals("feature.xml");
+	}
+
+	private static boolean isProjectOpenStateChange(IResource resource, int kind, int flags) {
+		return resource.getType() == IResource.PROJECT
+			&& kind == IResourceDelta.CHANGED
+			&& (flags & IResourceDelta.OPEN) != 0;
 	}
 
 	public FeatureWorkingSetUpdater() {
-		fWorkingSets= new ArrayList<IWorkingSet>();
+		fWorkingSets= new ArrayList<IFeatureWorkingSet>();
 		JavaCore.addElementChangedListener(this);
+		
+		IWorkingSetManager workingSetManager = PlatformUI.getWorkbench().getWorkingSetManager();
+		
+		workingSetManager.addPropertyChangeListener(new IPropertyChangeListener() {
+			
+			private boolean alreadyUpdating = false;
+
+			@Override
+			public synchronized void propertyChange(PropertyChangeEvent event) {
+				String property = event.getProperty();
+				
+					if (property.equals(IWorkingSetManager.CHANGE_WORKING_SET_CONTENT_CHANGE)) {
+						
+						IWorkingSet workingSet = (IWorkingSet) event.getNewValue();
+						
+						if (FeatureWorkingSetPlugin.FEATUREWORKINGSET_ID.equals(workingSet.getId())) {
+							if (alreadyUpdating) {
+								alreadyUpdating = false;
+							} else {
+								alreadyUpdating = true;
+								IFeatureWorkingSet featureWorkingSet = internalGetFeatureWorkingSet(workingSet);
+								if (featureWorkingSet != null) {
+									updateFeatureWorkingSet(featureWorkingSet);
+								}
+							}
+						}
+					}
+					
+					if (property.equals(IWorkingSetManager.CHANGE_WORKING_SET_NAME_CHANGE)) {
+						IWorkingSet workingSet = (IWorkingSet) event.getNewValue();
+						
+						if (FeatureWorkingSetPlugin.FEATUREWORKINGSET_ID.equals(workingSet.getId())) {
+							IFeatureWorkingSet featureWorkingSet = internalGetFeatureWorkingSet(workingSet);
+							updateFeatureWorkingSet(featureWorkingSet);
+						}
+					}
+				}
+				
+				
+				
+		});
 	}
 
 	/**
 	 * {@inheritDoc}
 	 */
 	public void add(IWorkingSet workingSet) {
-		checkElementExistence(workingSet);
 		synchronized (fWorkingSets) {
-			fWorkingSets.add(workingSet);
-		}
-	}
-
-	private void checkElementExistence(IWorkingSet workingSet) {
-		List<IAdaptable> elements= new ArrayList<IAdaptable>(Arrays.asList(workingSet.getElements()));
-		boolean changed= false;
-		for (Iterator<IAdaptable> iter= elements.iterator(); iter.hasNext();) {
-			IAdaptable element= iter.next();
-			boolean remove= false;
-			if (element instanceof IJavaElement) {
-				IJavaElement jElement= (IJavaElement)element;
-				// If we have directly a project then remove it when it
-				// doesn't exist anymore. However if we have a sub element
-				// under a project only remove the element if the parent
-				// project is open. Otherwise we would remove all elements
-				// in closed projects.
-				if (jElement instanceof IJavaProject) {
-					remove= !jElement.exists();
-				} else {
-					final IJavaProject javaProject= jElement.getJavaProject();
-					final boolean isProjectOpen= javaProject != null ? javaProject.getProject().isOpen() : true;
-					remove= isProjectOpen && !jElement.exists();
-				}
-			} else if (element instanceof IResource) {
-				IResource resource= (IResource)element;
-				// See comments above
-				if (resource instanceof IProject) {
-					remove= !resource.exists();
-				} else {
-					IProject project= resource.getProject();
-					remove= (project != null ? project.isOpen() : true) && !resource.exists();
-				}
-			}
-			if (remove) {
-				iter.remove();
-				changed= true;
-			}
-		}
-		if (changed) {
-			workingSet.setElements(elements.toArray(new IAdaptable[elements.size()]));
+			IFeatureWorkingSet featureWorkingSet = createWorkingSet(workingSet);
+			fWorkingSets.add(featureWorkingSet);
+			
+			// TODO Workaround! working sets are not available in WorkingSetModel if they do not contain elements -> do not update here but where the working set is created.  
+//			updateFeatureWorkingSet(featureWorkingSet);
 		}
 	}
 
@@ -119,25 +169,21 @@ public class FeatureWorkingSetUpdater implements IWorkingSetUpdater, IElementCha
 	 * {@inheritDoc}
 	 */
 	public boolean remove(IWorkingSet workingSet) {
-		boolean result;
 		synchronized(fWorkingSets) {
-			result= fWorkingSets.remove(workingSet);
+			IFeatureWorkingSet featureWorkingSet = internalGetFeatureWorkingSet(workingSet);
+			if (featureWorkingSet != null) {
+				fWorkingSets.remove(featureWorkingSet);
+			}
 		}
-		return result;
+		return true;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	public boolean contains(IWorkingSet workingSet) {
 		synchronized(fWorkingSets) {
-			return fWorkingSets.contains(workingSet);
+			return internalContainsFeatureWorkingSet(workingSet);
 		}
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	public void dispose() {
 		synchronized(fWorkingSets) {
 			fWorkingSets.clear();
@@ -145,128 +191,66 @@ public class FeatureWorkingSetUpdater implements IWorkingSetUpdater, IElementCha
 		JavaCore.removeElementChangedListener(this);
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	public void elementChanged(ElementChangedEvent event) {
-		IWorkingSet[] workingSets;
-		synchronized(fWorkingSets) {
-			workingSets= fWorkingSets.toArray(new IWorkingSet[fWorkingSets.size()]);
-		}
-		for (int w= 0; w < workingSets.length; w++) {
-			WorkingSetDelta workingSetDelta= new WorkingSetDelta(workingSets[w]);
-			processJavaDelta(workingSetDelta, event.getDelta());
-			IResourceDelta[] resourceDeltas= event.getDelta().getResourceDeltas();
-			if (resourceDeltas != null) {
-				for (int r= 0; r < resourceDeltas.length; r++) {
-					processResourceDelta(workingSetDelta, resourceDeltas[r]);
-				}
-			}
-			workingSetDelta.process();
-		}
-	}
-
-	private void processJavaDelta(WorkingSetDelta result, IJavaElementDelta delta) {
-		IJavaElement jElement= delta.getElement();
-		int index= result.indexOf(jElement);
-		int type= jElement.getElementType();
-		int kind= delta.getKind();
-		int flags= delta.getFlags();
-		if (type == IJavaElement.JAVA_PROJECT && kind == IJavaElementDelta.CHANGED) {
-			if (index != -1 && (flags & IJavaElementDelta.F_CLOSED) != 0) {
-				result.set(index, ((IJavaProject)jElement).getProject());
-			} else if ((flags & IJavaElementDelta.F_OPENED) != 0) {
-				index= result.indexOf(((IJavaProject)jElement).getProject());
-				if (index != -1)
-					result.set(index, jElement);
-			}
-		}
-		if (index != -1) {
-			if (kind == IJavaElementDelta.REMOVED) {
-				if ((flags & IJavaElementDelta.F_MOVED_TO) != 0) {
-					result.set(index, delta.getMovedToElement());
-				} else {
-					result.remove(index);
-				}
-			}
-		}
-		IResourceDelta[] resourceDeltas= delta.getResourceDeltas();
-		if (resourceDeltas != null) {
-			for (int i= 0; i < resourceDeltas.length; i++) {
-				processResourceDelta(result, resourceDeltas[i]);
-			}
-		}
-		IJavaElementDelta[] children= delta.getAffectedChildren();
-		for (int i= 0; i < children.length; i++) {
-			processJavaDelta(result, children[i]);
-		}
-	}
-
-	private void processResourceDelta(WorkingSetDelta result, IResourceDelta delta) {
-		IResource resource= delta.getResource();
-		int type= resource.getType();
-		int index= result.indexOf(resource);
-		int kind= delta.getKind();
-		int flags= delta.getFlags();
-		if (kind == IResourceDelta.CHANGED && type == IResource.PROJECT && index != -1) {
-			if ((flags & IResourceDelta.OPEN) != 0) {
-				result.set(index, resource);
-			}
-		}
-		if (index != -1 && kind == IResourceDelta.REMOVED) {
-			if ((flags & IResourceDelta.MOVED_TO) != 0) {
-				result.set(index,
-					ResourcesPlugin.getWorkspace().getRoot().findMember(delta.getMovedToPath()));
-			} else {
-				result.remove(index);
-			}
-		}
-
-		// Don't dive into closed or opened projects
-		if (projectGotClosedOrOpened(resource, kind, flags))
-			return;
+		IResourceDelta[] resourceDeltas = event.getDelta().getResourceDeltas();
 		
-		if (featureProjectChanged(resource, kind)) {
+		for (IResourceDelta resourceDelta : resourceDeltas) {
+			processResourceDelta(resourceDelta);
+		}
+		
+	}
+
+	private void processResourceDelta(IResourceDelta resourceDelta) {
+		IResource resource= resourceDelta.getResource();
+		int kind= resourceDelta.getKind();
+		int flags = resourceDelta.getFlags();
+		
+		if (isProjectOpenStateChange(resource, kind, flags)) {
 			IProject changedProject = resource.getProject();
 			
-			for (IWorkingSet workingSet : fWorkingSets) {
-				List<IProject> featureProjects = FeatureWorkingSetUtil.getFeatureProjects(workingSet);
-				
-				if (featureProjects.contains(changedProject)) {
-					updateFeatureWorkingSet(workingSet, featureProjects);
+			IFeatureWorkingSet featureWorkingSet = internalGetFeatureWorkingSet(changedProject);
+			if (featureWorkingSet != null) {
+				updateFeatureWorkingSet(featureWorkingSet);
+			}
+		}
+		
+		if (isFeatureFileChange(resource, kind)) {
+			IProject changedProject = resource.getProject();
+			
+			for (IFeatureWorkingSet workingSet : fWorkingSets) {
+				if (changedProject.equals(workingSet.getFeatureProject())) {
+					updateFeatureWorkingSet(workingSet);
 				}
 			}
 		}
-
-		IResourceDelta[] children= delta.getAffectedChildren();
+		
+		IResourceDelta[] children= resourceDelta.getAffectedChildren();
 		for (int i= 0; i < children.length; i++) {
-			processResourceDelta(result, children[i]);
+			processResourceDelta(children[i]);
 		}
+		
 	}
 
-	private void updateFeatureWorkingSet(IWorkingSet workingSet, List<IProject> featureProjects) {
-		List<IAdaptable> newElements = new ArrayList<IAdaptable>(featureProjects);
-		
-		for (IProject featureProject : featureProjects) {
-			try {
-				IProject[] referencedPluginProjects;
-				referencedPluginProjects = FeatureWorkingSetUtil.getReferencedPluginProjects(featureProject);
-				newElements.addAll(Arrays.asList(referencedPluginProjects));
-			} catch (CoreException e) {
-				FeatureWorkingSetPlugin.getDefault().getLog().log(e.getStatus());
+	private IFeatureWorkingSet internalGetFeatureWorkingSet(IProject featureProject) {
+		for (IFeatureWorkingSet featureWorkingSet : fWorkingSets) {
+			if (featureWorkingSet.getFeatureProject().equals(featureProject)) {
+				return featureWorkingSet;
+			}
+		}
+		return null;
+	}
+
+	private IFeatureWorkingSet internalGetFeatureWorkingSet(IWorkingSet workingSet) {
+		for (IFeatureWorkingSet featureWorkingSet : fWorkingSets) {
+			if (featureWorkingSet.getWorkingSetName().equals(workingSet.getName())) {
+				return featureWorkingSet;
 			}
 		}
 		
-		workingSet.setElements(newElements.toArray(new IAdaptable[newElements.size()]));
+		return null;
 	}
 
-	private boolean featureProjectChanged(IResource resource, int kind) {
-		return kind == IResourceDelta.CHANGED && (resource instanceof IFile) && ((IFile)resource).getName().equals("feature.xml");
-	}
-
-	private boolean projectGotClosedOrOpened(IResource resource, int kind, int flags) {
-		return resource.getType() == IResource.PROJECT
-			&& kind == IResourceDelta.CHANGED
-			&& (flags & IResourceDelta.OPEN) != 0;
+	private boolean internalContainsFeatureWorkingSet(IWorkingSet workingSet) {
+		return internalGetFeatureWorkingSet(workingSet) != null;
 	}
 }

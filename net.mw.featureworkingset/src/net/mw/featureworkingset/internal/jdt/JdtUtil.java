@@ -13,6 +13,7 @@ import org.eclipse.jface.viewers.IBaseLabelProvider;
  * @author Michael
  * 
  */
+@SuppressWarnings("restriction")
 public class JdtUtil {
 
 	public static IBaseLabelProvider getTreeLabelProvider() {

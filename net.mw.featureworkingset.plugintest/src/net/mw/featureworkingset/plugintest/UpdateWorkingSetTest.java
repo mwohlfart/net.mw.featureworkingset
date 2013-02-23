@@ -13,7 +13,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 import junit.framework.Assert;
-import net.mw.featureworkingset.CreateWorkingSetsHandler;
+import net.mw.featureworkingset.CreateFeatureWorkingSetHandler;
 
 import org.eclipse.core.internal.resources.XMLWriter;
 import org.eclipse.core.resources.IContainer;
@@ -52,8 +52,10 @@ public class UpdateWorkingSetTest {
 		}
 
 		@Override
-		public IStatus runInWorkspace(IProgressMonitor monitor) throws CoreException {
-			ResourcesPlugin.getWorkspace().getRoot().delete(true, new NullProgressMonitor());
+		public IStatus runInWorkspace(IProgressMonitor monitor)
+				throws CoreException {
+			ResourcesPlugin.getWorkspace().getRoot()
+					.delete(true, new NullProgressMonitor());
 			return Status.OK_STATUS;
 		}
 
@@ -65,7 +67,7 @@ public class UpdateWorkingSetTest {
 
 	}
 
-	public abstract static class ProjectBuilder {
+	private abstract static class ProjectBuilder {
 
 		protected String name;
 
@@ -74,7 +76,8 @@ public class UpdateWorkingSetTest {
 		}
 
 		public IProject create() throws Exception {
-			IProject project = ResourcesPlugin.getWorkspace().getRoot().getProject(name);
+			IProject project = ResourcesPlugin.getWorkspace().getRoot()
+					.getProject(name);
 
 			if (!project.exists()) {
 				project.create(new NullProgressMonitor());
@@ -87,7 +90,8 @@ public class UpdateWorkingSetTest {
 			return project;
 		}
 
-		protected void setPluginNature(IProject project, String... natures) throws CoreException {
+		protected void setPluginNature(IProject project, String... natures)
+				throws CoreException {
 			IProjectDescription description = project.getDescription();
 			description.setNatureIds(natures);
 			project.setDescription(description, new NullProgressMonitor());
@@ -95,7 +99,7 @@ public class UpdateWorkingSetTest {
 
 	}
 
-	public static class PluginProjectBuilder extends ProjectBuilder {
+	private static class PluginProjectBuilder extends ProjectBuilder {
 
 		public PluginProjectBuilder(String name) {
 			super(name);
@@ -119,7 +123,8 @@ public class UpdateWorkingSetTest {
 			InputStream stream = createManifestStream();
 
 			if (manifest.exists()) {
-				manifest.setContents(stream, true, true, new NullProgressMonitor());
+				manifest.setContents(stream, true, true,
+						new NullProgressMonitor());
 			} else {
 				manifest.create(stream, true, new NullProgressMonitor());
 			}
@@ -153,7 +158,7 @@ public class UpdateWorkingSetTest {
 
 	}
 
-	public static class FeatureProjectBuilder extends ProjectBuilder {
+	private static class FeatureProjectBuilder extends ProjectBuilder {
 
 		private Set<String> references = new HashSet<String>();
 		private String label;
@@ -172,6 +177,7 @@ public class UpdateWorkingSetTest {
 			return project;
 		}
 
+		@SuppressWarnings("restriction")
 		private void updateFeatureXml(IProject project) throws Exception {
 
 			ByteArrayOutputStream stream = new ByteArrayOutputStream();
@@ -181,17 +187,21 @@ public class UpdateWorkingSetTest {
 				stream.close();
 			}
 
-			ByteArrayInputStream contents = new ByteArrayInputStream(stream.toByteArray());
+			ByteArrayInputStream contents = new ByteArrayInputStream(
+					stream.toByteArray());
 
 			IFile file = PDEProject.getFeatureXml(project);
 			if (file.exists()) {
-				file.setContents(contents, true, true, new NullProgressMonitor());
+				file.setContents(contents, true, true,
+						new NullProgressMonitor());
 			} else {
 				file.create(contents, true, new NullProgressMonitor());
 			}
 		}
 
-		private void writeFeatureXmlTo(ByteArrayOutputStream stream) throws Exception {
+		@SuppressWarnings("restriction")
+		private void writeFeatureXmlTo(ByteArrayOutputStream stream)
+				throws Exception {
 			XMLWriter writer = new XMLWriter(stream);
 
 			HashMap<String, Object> featureParameters = new HashMap<String, Object>();
@@ -217,7 +227,7 @@ public class UpdateWorkingSetTest {
 			return this;
 		}
 
-		public FeatureProjectBuilder addReference(String... pluginIds) {
+		public FeatureProjectBuilder addIncludedPlugin(String... pluginIds) {
 			for (String pluginId : pluginIds) {
 				references.add(pluginId);
 			}
@@ -225,11 +235,12 @@ public class UpdateWorkingSetTest {
 		}
 
 		public void update() throws Exception {
-			IProject project = ResourcesPlugin.getWorkspace().getRoot().getProject(name);
+			IProject project = ResourcesPlugin.getWorkspace().getRoot()
+					.getProject(name);
 			updateFeatureXml(project);
 		}
 
-		public FeatureProjectBuilder removeReference(String... string) {
+		public FeatureProjectBuilder removeIncludedPlugin(String... string) {
 			for (String pluginId : string) {
 				references.remove(pluginId);
 			}
@@ -237,75 +248,198 @@ public class UpdateWorkingSetTest {
 		}
 
 	}
-	
+
+	private static class TestFixture {
+		public static void clearWorkingSetsFromManager() {
+			IWorkingSetManager manager = PlatformUI.getWorkbench()
+					.getWorkingSetManager();
+			IWorkingSet[] workingSets = manager.getWorkingSets();
+
+			for (IWorkingSet ws : workingSets) {
+				manager.removeWorkingSet(ws);
+			}
+		}
+
+		public static void disableAutoBuilding() throws CoreException {
+			IWorkspace workspace = ResourcesPlugin.getWorkspace();
+			IWorkspaceDescription description = workspace.getDescription();
+			if (description.isAutoBuilding()) {
+				description.setAutoBuilding(false);
+				workspace.setDescription(description);
+			}
+		}
+
+		public static void clearWorkspace() throws InterruptedException {
+			ClearWorkspaceJob.run();
+		}
+
+		public static IWorkingSet createFeatureWorkingSet(String name,
+				IAdaptable[] elements) {
+			IWorkingSetManager manager = PlatformUI.getWorkbench()
+					.getWorkingSetManager();
+			IWorkingSet workingSet = manager.createWorkingSet(name, elements);
+			workingSet.setId("net.mw.featureworkingset");
+			manager.addWorkingSet(workingSet);
+
+			return workingSet;
+		}
+
+		public static IProject createPluginProject(String name)
+				throws Exception {
+			return new PluginProjectBuilder(name).create();
+		}
+	}
+
 	@BeforeClass
-	public static void beforeClass() {
+	public static void beforeClass() throws CoreException {
+		TestFixture.disableAutoBuilding();
+
 		// load bundle
-		new CreateWorkingSetsHandler();
+		new CreateFeatureWorkingSetHandler();
 	}
 
 	@Before
 	public void setUp() throws Exception {
-		ClearWorkspaceJob.run();
-		clearWorkingSets();
-
-		disableAutoBuilding();
-	}
-
-	private void clearWorkingSets() {
-		IWorkingSetManager manager = PlatformUI.getWorkbench().getWorkingSetManager();
-		IWorkingSet[] workingSets = manager.getWorkingSets();
-		
-		for (IWorkingSet ws : workingSets) {
-			manager.removeWorkingSet(ws);
-		}
-	}
-
-	private void disableAutoBuilding() throws CoreException {
-		IWorkspace workspace = ResourcesPlugin.getWorkspace();
-		IWorkspaceDescription description = workspace.getDescription();
-		if (description.isAutoBuilding()) {
-			description.setAutoBuilding(false);
-			workspace.setDescription(description);
-		}
-
+		TestFixture.clearWorkspace();
+		TestFixture.clearWorkingSetsFromManager();
 	}
 
 	@Test
-	public void testPluginAdd() throws Exception {
+	public void testAddIncludedPluginToFeature() throws Exception {
 		// setup
-		IProject testProject = new PluginProjectBuilder("TestProject").create();
-		FeatureProjectBuilder featureProjectBuilder = new FeatureProjectBuilder("TestFeature");
-		IProject featureProject = featureProjectBuilder.addReference("TestProject").create();
+		TestFixture.createPluginProject("TestProject");
 
-		IWorkingSetManager manager = PlatformUI.getWorkbench().getWorkingSetManager();
-		IWorkingSet workingSet = manager.createWorkingSet("TestWorkingSet", new IAdaptable[] { featureProject, testProject });
-		workingSet.setId("net.mw.featureworkingset");
-		manager.addWorkingSet(workingSet);
+		FeatureProjectBuilder featureProjectBuilder = new FeatureProjectBuilder(
+				"TestFeature");
+		featureProjectBuilder.addIncludedPlugin("TestProject").create();
+
+		IWorkingSet workingSet = TestFixture.createFeatureWorkingSet(
+				"TestFeature", new IAdaptable[] {});
 
 		// test
-		new PluginProjectBuilder("TestProject1").create();
-		featureProjectBuilder.addReference("TestProject1").update();
+		TestFixture.createPluginProject("TestProject1");
+		featureProjectBuilder.addIncludedPlugin("TestProject1").update();
 
 		// assert
-		Assert.assertEquals(3, workingSet.getElements().length);
+		Assert.assertEquals(2, workingSet.getElements().length);
 	}
-	
-	@Test
-	public void testPluginRemove() throws Exception {
-		// setup
-		IProject testProject = new PluginProjectBuilder("TestProject").create();
-		IProject testProject1 = new PluginProjectBuilder("TestProject1").create();
-		FeatureProjectBuilder featureProjectBuilder = new FeatureProjectBuilder("TestFeature");
-		IProject featureProject = featureProjectBuilder.addReference("TestProject").addReference("TestProject1").create();
 
-		IWorkingSetManager manager = PlatformUI.getWorkbench().getWorkingSetManager();
-		IWorkingSet workingSet = manager.createWorkingSet("TestWorkingSet", new IAdaptable[] { featureProject, testProject, testProject1 });
-		workingSet.setId("net.mw.featureworkingset");
-		manager.addWorkingSet(workingSet);
+	@Test
+	public void testRemoveIncludedPluginFromFeature() throws Exception {
+		// setup
+		TestFixture.createPluginProject("TestProject");
+		TestFixture.createPluginProject("TestProject1");
+		FeatureProjectBuilder featureProjectBuilder = new FeatureProjectBuilder(
+				"TestFeature");
+		featureProjectBuilder.addIncludedPlugin("TestProject")
+				.addIncludedPlugin("TestProject1").create();
+
+		IWorkingSet workingSet = TestFixture.createFeatureWorkingSet(
+				"TestFeature", new IAdaptable[] {});
 
 		// test
-		featureProjectBuilder.removeReference("TestProject1").update();
+		featureProjectBuilder.removeIncludedPlugin("TestProject1").update();
+
+		// assert
+		Assert.assertEquals(1, workingSet.getElements().length);
+	}
+
+	@Test
+	public void testOnlyIncludedPluginsInWorkingSet() throws Exception {
+		// setup
+		TestFixture.createPluginProject("TestProject");
+		FeatureProjectBuilder featureProjectBuilder = new FeatureProjectBuilder(
+				"TestFeature");
+		featureProjectBuilder.addIncludedPlugin("TestProject").create();
+
+		IWorkingSet workingSet = TestFixture.createFeatureWorkingSet(
+				"TestFeature", new IAdaptable[] {});
+
+		// test
+		IProject testProject = TestFixture.createPluginProject("TestProject1");
+		workingSet.setElements(new IAdaptable[] { testProject });
+
+		// assert
+		Assert.assertEquals(1, workingSet.getElements().length);
+	}
+
+	@Test
+	public void testWorkingSetNameChange() throws Exception {
+		// setup
+		TestFixture.createPluginProject("TestProject");
+		FeatureProjectBuilder featureProjectBuilder = new FeatureProjectBuilder(
+				"TestFeature");
+		featureProjectBuilder.addIncludedPlugin("TestProject").create();
+
+		IWorkingSet workingSet = TestFixture.createFeatureWorkingSet(
+				"NonExistingTestFeature", new IAdaptable[] {});
+
+		// test
+		workingSet.setName("TestFeature");
+
+		// assert
+		Assert.assertEquals(1, workingSet.getElements().length);
+	}
+
+	@Test
+	public void testWorkingSetFeatureProjectClose() throws Exception {
+		// setup
+		TestFixture.createPluginProject("TestProject");
+		FeatureProjectBuilder featureProjectBuilder = new FeatureProjectBuilder(
+				"TestFeature");
+		IProject featureProject = featureProjectBuilder.addIncludedPlugin(
+				"TestProject").create();
+
+		IWorkingSet workingSet = TestFixture.createFeatureWorkingSet(
+				"TestFeature", new IAdaptable[] {});
+
+		// test
+		featureProject.close(new NullProgressMonitor());
+
+		// assert
+		Assert.assertEquals(0, workingSet.getElements().length);
+
+	}
+
+	@Test
+	public void testWorkingSetFeatureProjectOpen() throws Exception {
+		// setup
+		TestFixture.createPluginProject("TestProject");
+		FeatureProjectBuilder featureProjectBuilder = new FeatureProjectBuilder(
+				"TestFeature");
+		IProject featureProject = featureProjectBuilder.addIncludedPlugin(
+				"TestProject").create();
+		featureProject.close(new NullProgressMonitor());
+
+		IWorkingSet workingSet = TestFixture.createFeatureWorkingSet(
+				"TestFeature", new IAdaptable[] {});
+
+		// test
+		featureProject.open(new NullProgressMonitor());
+
+		// assert
+		Assert.assertEquals(1, workingSet.getElements().length);
+
+	}
+
+	@Test
+	public void testClosePluginInFeatureWorkingSet() throws Exception {
+		// setup
+		IProject pluginProject = TestFixture.createPluginProject("TestProject");
+		TestFixture.createPluginProject("TestProject1");
+		FeatureProjectBuilder featureProjectBuilder = new FeatureProjectBuilder(
+				"TestFeature");
+		featureProjectBuilder
+				.addIncludedPlugin("TestProject")
+				.addIncludedPlugin("TestProject1").create();
+
+		IWorkingSet workingSet = TestFixture.createFeatureWorkingSet(
+				"TestFeature", new IAdaptable[] {});
+
+		// test
+		pluginProject.close(new NullProgressMonitor());
+		
+		Thread.sleep(1000);
 
 		// assert
 		Assert.assertEquals(2, workingSet.getElements().length);

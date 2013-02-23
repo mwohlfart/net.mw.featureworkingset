@@ -26,7 +26,7 @@
          point="org.eclipse.ui.commands">
       <command
             id="net.mw.workingset.utils.createworkingsets"
-            name="Create Working Sets from Feature">
+            name="%command.name">
       </command>
    </extension>
    <extension
@@ -42,7 +42,7 @@
    <extension
          point="org.eclipse.ui.handlers">
       <handler
-            class="net.mw.featureworkingset.CreateWorkingSetsHandler"
+            class="net.mw.featureworkingset.CreateFeatureWorkingSetHandler"
             commandId="net.mw.workingset.utils.createworkingsets">
          <activeWhen>
             <iterate>
@@ -62,11 +62,11 @@
    <extension
          point="org.eclipse.ui.workingSets">
       <workingSet
-            description="A working set created from the contents of an eclipse feature."
+            description="%workingSet.description"
             elementAdapterClass="org.eclipse.jdt.internal.ui.workingsets.JavaWorkingSetElementAdapter"
             icon="icons/feature_workset_obj.png"
             id="net.mw.featureworkingset"
-            name="FeatureWorkingSet"
+            name="%workingSet.name"
             pageClass="net.mw.featureworkingset.FeatureWorkingSetPage"
             updaterClass="net.mw.featureworkingset.FeatureWorkingSetUpdater">
       </workingSet>

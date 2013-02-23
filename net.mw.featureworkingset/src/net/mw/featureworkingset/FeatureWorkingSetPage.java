@@ -5,6 +5,7 @@ package net.mw.featureworkingset;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -14,12 +15,9 @@ import net.mw.featureworkingset.internal.jdt.JdtUtil;
 import net.mw.featureworkingset.internal.jdt.PdeUtil;
 
 import org.eclipse.core.resources.IProject;
-import org.eclipse.core.resources.IResource;
-import org.eclipse.core.resources.IResourceVisitor;
 import org.eclipse.core.resources.IWorkspace;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.jdt.ui.JavaElementComparator;
 import org.eclipse.jface.viewers.ITreeContentProvider;
 import org.eclipse.jface.viewers.TableViewer;
@@ -32,33 +30,11 @@ import org.eclipse.ui.dialogs.IWorkingSetPage;
  * @author Michael
  * 
  */
-public class FeatureWorkingSetPage extends AbstractWorkingSetWizardPage implements IWorkingSetPage {
+public class FeatureWorkingSetPage extends AbstractWorkingSetWizardPage
+		implements IWorkingSetPage {
 
-	public class FeatureProjectVisitor implements IResourceVisitor {
-
-		private List<IProject> featureProjects = new ArrayList<IProject>();
-
-		public IProject[] getFeatureProjects() {
-			return featureProjects.toArray(new IProject[featureProjects.size()]);
-		}
-
-		@Override
-		public boolean visit(IResource resource) throws CoreException {
-
-			if (resource instanceof IProject) {
-				IProject project = (IProject) resource;
-				if (PdeUtil.isFeatureProject(project)) {
-					featureProjects.add(project);
-				}
-				return false;
-			}
-
-			return true;
-		}
-
-	}
-
-	public class WorkspaceFeatureProjectProvider implements ITreeContentProvider {
+	public class WorkspaceFeatureProjectProvider implements
+			ITreeContentProvider {
 
 		@Override
 		public void dispose() {
@@ -72,20 +48,28 @@ public class FeatureWorkingSetPage extends AbstractWorkingSetWizardPage implemen
 
 		@Override
 		public Object[] getElements(Object inputElement) {
+
+			List<IProject> result = new ArrayList<IProject>();
+			
 			if (inputElement instanceof IWorkspace) {
+
 				IWorkspace workspace = (IWorkspace) inputElement;
 
-				FeatureProjectVisitor visitor = new FeatureProjectVisitor();
-
-				try {
-					workspace.getRoot().accept(visitor, IResource.DEPTH_ONE, false);
-					return visitor.getFeatureProjects();
-				} catch (CoreException e) {
-					// do nothing here
+				for (IProject project : workspace.getRoot().getProjects()) {
+					if (project.isOpen()) {
+						try {
+							if (PdeUtil.isFeatureProject(project)) {
+								result.add(project);
+							}
+						} catch (CoreException e) {
+							FeatureWorkingSetPlugin.getDefault().getLog()
+									.log(e.getStatus());
+						}
+					}
 				}
-
 			}
-			return null;
+			
+			return result.toArray();
 		}
 
 		@Override
@@ -107,15 +91,13 @@ public class FeatureWorkingSetPage extends AbstractWorkingSetWizardPage implemen
 
 	}
 
-	private static final String ID = "net.mw.featureworkingset";
-
 	public FeatureWorkingSetPage() {
 		super("featureWorkingSetPage", "Feature Working Set", null);
 	}
 
 	@Override
 	protected String getPageId() {
-		return ID;
+		return FeatureWorkingSetPlugin.FEATUREWORKINGSET_ID;
 	}
 
 	@Override
@@ -138,15 +120,16 @@ public class FeatureWorkingSetPage extends AbstractWorkingSetWizardPage implemen
 	protected Object[] getInitialWorkingSetElements(IWorkingSet workingSet) {
 
 		List<Object> result = new ArrayList<Object>();
-		IAdaptable[] elements = workingSet.getElements();
-
-		for (IAdaptable adaptable : elements) {
-			IProject project = (IProject) adaptable.getAdapter(IProject.class);
-
-			if (project != null && FeatureWorkingSetUtil.isFeatureProject(project)) {
-				result.add(adaptable);
-			}
-		}
+//		IAdaptable[] elements = workingSet.getElements();
+//
+//		for (IAdaptable adaptable : elements) {
+//			IProject project = (IProject) adaptable.getAdapter(IProject.class);
+//
+//			if (project != null
+//					&& FeatureWorkingSetUtil.isFeatureProject(project)) {
+//				result.add(adaptable);
+//			}
+//		}
 
 		return result.toArray(new Object[result.size()]);
 	}
@@ -155,26 +138,26 @@ public class FeatureWorkingSetPage extends AbstractWorkingSetWizardPage implemen
 	protected Set<Object> getWorkingSetElements(Object[] selection) {
 		Set<Object> result = new HashSet<Object>();
 
-		for (Object o : selection) {
-			if (o instanceof IProject) {
-				IProject project = (IProject) o;
-				result.add(project);
-				addFeaturePluginsTo(result, project);
+		try {
+			for (Object o : selection) {
+				if (o instanceof IProject) {
+					IProject project = (IProject) o;
+
+					if (PdeUtil.isFeatureProject(project)) {
+						result.add(project);
+
+						IProject[] includedPluginProjects = FeatureWorkingSetUtil
+								.getIncludedPluginProjects(project);
+						result.addAll(Arrays.asList(includedPluginProjects));
+					}
+				}
 			}
+		} catch (CoreException e) {
+			FeatureWorkingSetPlugin.getDefault().getLog().log(e.getStatus());
+			return Collections.emptySet();
 		}
 
 		return result;
 	}
-
-	private void addFeaturePluginsTo(Set<Object> result, IProject featureProject) {
-
-		try {
-			IProject[] referencedPluginProjects = FeatureWorkingSetUtil.getReferencedPluginProjects(featureProject);
-			result.addAll(Arrays.asList(referencedPluginProjects));
-		} catch (CoreException e) {
-			FeatureWorkingSetPlugin.getDefault().getLog().log(e.getStatus());
-		}
-	}
-
 
 }

@@ -22,13 +22,7 @@ import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.jdt.internal.ui.workingsets.WorkingSetMessages;
 import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.jface.resource.ImageDescriptor;
-import org.eclipse.jface.viewers.DoubleClickEvent;
-import org.eclipse.jface.viewers.IDoubleClickListener;
-import org.eclipse.jface.viewers.ISelectionChangedListener;
-import org.eclipse.jface.viewers.IStructuredContentProvider;
-import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.viewers.ITreeContentProvider;
-import org.eclipse.jface.viewers.SelectionChangedEvent;
 import org.eclipse.jface.viewers.TableViewer;
 import org.eclipse.jface.viewers.TreeViewer;
 import org.eclipse.jface.viewers.Viewer;
@@ -37,15 +31,11 @@ import org.eclipse.jface.wizard.WizardPage;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.ModifyEvent;
 import org.eclipse.swt.events.ModifyListener;
-import org.eclipse.swt.events.SelectionAdapter;
-import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
-import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Text;
-import org.eclipse.swt.widgets.TreeItem;
 import org.eclipse.ui.IWorkingSet;
 import org.eclipse.ui.IWorkingSetManager;
 import org.eclipse.ui.PlatformUI;
@@ -79,7 +69,7 @@ public abstract class AbstractWorkingSetWizardPage extends WizardPage implements
 
 	private Text fWorkingSetName;
 	private TreeViewer fTree;
-	private TableViewer fTable;
+//	private TableViewer fTable;
 	private ITreeContentProvider fTreeContentProvider;
 
 	private boolean fFirstCheck;
@@ -211,24 +201,24 @@ public abstract class AbstractWorkingSetWizardPage extends WizardPage implements
 		gridLayout.marginWidth = 0;
 		leftComposite.setLayout(gridLayout);
 
-		Composite centerComposite = new Composite(leftCenterRightComposite, SWT.NONE);
-		gridLayout = new GridLayout(1, false);
-		gridLayout.marginHeight = 0;
-		gridLayout.marginWidth = 0;
-		centerComposite.setLayout(gridLayout);
-		centerComposite.setLayoutData(new GridData(SWT.CENTER, SWT.TOP, false, false));
-
-		Composite rightComposite = new Composite(leftCenterRightComposite, SWT.NONE);
-		gridData = new GridData(SWT.FILL, SWT.FILL, true, true);
-		gridData.widthHint = convertWidthInCharsToPixels(40);
-		rightComposite.setLayoutData(gridData);
-		gridLayout = new GridLayout(1, false);
-		gridLayout.marginHeight = 0;
-		gridLayout.marginWidth = 0;
-		rightComposite.setLayout(gridLayout);
+//		Composite centerComposite = new Composite(leftCenterRightComposite, SWT.NONE);
+//		gridLayout = new GridLayout(1, false);
+//		gridLayout.marginHeight = 0;
+//		gridLayout.marginWidth = 0;
+//		centerComposite.setLayout(gridLayout);
+//		centerComposite.setLayoutData(new GridData(SWT.CENTER, SWT.TOP, false, false));
+//
+//		Composite rightComposite = new Composite(leftCenterRightComposite, SWT.NONE);
+//		gridData = new GridData(SWT.FILL, SWT.FILL, true, true);
+//		gridData.widthHint = convertWidthInCharsToPixels(40);
+//		rightComposite.setLayoutData(gridData);
+//		gridLayout = new GridLayout(1, false);
+//		gridLayout.marginHeight = 0;
+//		gridLayout.marginWidth = 0;
+//		rightComposite.setLayout(gridLayout);
 
 		createTree(leftComposite);
-		createTable(rightComposite);
+//		createTable(rightComposite);
 
 		if (fWorkingSet != null)
 			fWorkingSetName.setText(fWorkingSet.getName());
@@ -236,11 +226,11 @@ public abstract class AbstractWorkingSetWizardPage extends WizardPage implements
 		initializeSelectedElements();
 		validateInput();
 
-		fTable.setInput(fSelectedElements);
-		fTable.refresh(true);
+//		fTable.setInput(fSelectedElements);
+//		fTable.refresh(true);
 		fTree.refresh(true);
 
-		createButtonBar(centerComposite);
+//		createButtonBar(centerComposite);
 
 		fWorkingSetName.setFocus();
 		fWorkingSetName.setSelection(0, fWorkingSetName.getText().length());
@@ -254,7 +244,7 @@ public abstract class AbstractWorkingSetWizardPage extends WizardPage implements
 		label.setLayoutData(new GridData(SWT.LEAD, SWT.CENTER, false, false));
 		label.setText(WorkingSetMessages.JavaWorkingSetPage_workspace_content);
 
-		fTree = new TreeViewer(parent, SWT.BORDER | SWT.H_SCROLL | SWT.V_SCROLL | SWT.MULTI);
+		fTree = new TreeViewer(parent, SWT.BORDER | SWT.H_SCROLL | SWT.V_SCROLL | SWT.SINGLE);
 		fTree.getControl().setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
 
 		fTree.addFilter(new AddedElementsFilter());
@@ -265,187 +255,187 @@ public abstract class AbstractWorkingSetWizardPage extends WizardPage implements
 		fTreeContentProvider = (ITreeContentProvider) fTree.getContentProvider();
 	}
 
-	private void createButtonBar(Composite parent) {
-		Label spacer = new Label(parent, SWT.NONE);
-		spacer.setLayoutData(new GridData(SWT.FILL, SWT.TOP, true, false));
+//	private void createButtonBar(Composite parent) {
+//		Label spacer = new Label(parent, SWT.NONE);
+//		spacer.setLayoutData(new GridData(SWT.FILL, SWT.TOP, true, false));
+//
+//		final Button addButton = new Button(parent, SWT.PUSH);
+//		addButton.setLayoutData(new GridData(SWT.FILL, SWT.TOP, true, false));
+//		addButton.setText(WorkingSetMessages.JavaWorkingSetPage_add_button);
+//		addButton.setEnabled(!fTree.getSelection().isEmpty());
+//
+//		final Button addAllButton = new Button(parent, SWT.PUSH);
+//		addAllButton.setLayoutData(new GridData(SWT.FILL, SWT.TOP, true, false));
+//		addAllButton.setText(WorkingSetMessages.JavaWorkingSetPage_addAll_button);
+//		addAllButton.setEnabled(fTree.getTree().getItems().length > 0);
+//
+//		final Button removeButton = new Button(parent, SWT.PUSH);
+//		removeButton.setLayoutData(new GridData(SWT.FILL, SWT.TOP, true, false));
+//		removeButton.setText(WorkingSetMessages.JavaWorkingSetPage_remove_button);
+//		removeButton.setEnabled(!fTable.getSelection().isEmpty());
+//
+//		final Button removeAllButton = new Button(parent, SWT.PUSH);
+//		removeAllButton.setLayoutData(new GridData(SWT.CENTER, SWT.TOP, false, false));
+//		removeAllButton.setText(WorkingSetMessages.JavaWorkingSetPage_removeAll_button);
+//		removeAllButton.setEnabled(!fSelectedElements.isEmpty());
+//
+//		fTree.addSelectionChangedListener(new ISelectionChangedListener() {
+//			public void selectionChanged(SelectionChangedEvent event) {
+//				addButton.setEnabled(!event.getSelection().isEmpty());
+//			}
+//		});
+//
+//		addButton.addSelectionListener(new SelectionAdapter() {
+//			@Override
+//			public void widgetSelected(SelectionEvent e) {
+//				addTreeSelection();
+//
+//				removeAllButton.setEnabled(true);
+//				addAllButton.setEnabled(fTree.getTree().getItems().length > 0);
+//			}
+//		});
+//
+//		fTree.addDoubleClickListener(new IDoubleClickListener() {
+//			public void doubleClick(DoubleClickEvent event) {
+//				addTreeSelection();
+//
+//				removeAllButton.setEnabled(true);
+//				addAllButton.setEnabled(fTree.getTree().getItems().length > 0);
+//			}
+//		});
+//
+//		fTable.addSelectionChangedListener(new ISelectionChangedListener() {
+//			public void selectionChanged(SelectionChangedEvent event) {
+//				removeButton.setEnabled(!event.getSelection().isEmpty());
+//			}
+//		});
+//
+//		removeButton.addSelectionListener(new SelectionAdapter() {
+//			@Override
+//			public void widgetSelected(SelectionEvent e) {
+//				removeTableSelection();
+//
+//				addAllButton.setEnabled(true);
+//				removeAllButton.setEnabled(!fSelectedElements.isEmpty());
+//			}
+//		});
+//
+//		fTable.addDoubleClickListener(new IDoubleClickListener() {
+//			public void doubleClick(DoubleClickEvent event) {
+//				removeTableSelection();
+//
+//				addAllButton.setEnabled(true);
+//				removeAllButton.setEnabled(!fSelectedElements.isEmpty());
+//			}
+//		});
+//
+//		addAllButton.addSelectionListener(new SelectionAdapter() {
+//			/*
+//			 * (non-Javadoc)
+//			 * 
+//			 * @see
+//			 * org.eclipse.swt.events.SelectionAdapter#widgetSelected(org.eclipse
+//			 * .swt.events.SelectionEvent)
+//			 */
+//			@Override
+//			public void widgetSelected(SelectionEvent e) {
+//				TreeItem[] items = fTree.getTree().getItems();
+//				for (int i = 0; i < items.length; i++) {
+//					fSelectedElements.add(items[i].getData());
+//				}
+//				fTable.refresh();
+//				fTree.refresh();
+//
+//				addAllButton.setEnabled(false);
+//				removeAllButton.setEnabled(true);
+//			}
+//		});
+//
+//		removeAllButton.addSelectionListener(new SelectionAdapter() {
+//			/*
+//			 * (non-Javadoc)
+//			 * 
+//			 * @see
+//			 * org.eclipse.swt.events.SelectionAdapter#widgetSelected(org.eclipse
+//			 * .swt.events.SelectionEvent)
+//			 */
+//			@Override
+//			public void widgetSelected(SelectionEvent e) {
+//				fSelectedElements.clear();
+//
+//				fTable.refresh();
+//				fTree.refresh();
+//
+//				removeAllButton.setEnabled(false);
+//				addAllButton.setEnabled(true);
+//			}
+//		});
+//
+//	}
 
-		final Button addButton = new Button(parent, SWT.PUSH);
-		addButton.setLayoutData(new GridData(SWT.FILL, SWT.TOP, true, false));
-		addButton.setText(WorkingSetMessages.JavaWorkingSetPage_add_button);
-		addButton.setEnabled(!fTree.getSelection().isEmpty());
+//	/**
+//	 * Moves selected elements in the tree into the table
+//	 */
+//	private void addTreeSelection() {
+//		IStructuredSelection selection = (IStructuredSelection) fTree.getSelection();
+//		fSelectedElements.addAll(selection.toList());
+//		Object[] selectedElements = selection.toArray();
+//		fTable.add(selectedElements);
+//		fTree.remove(selectedElements);
+//		fTable.setSelection(selection);
+//		fTable.getControl().setFocus();
+//		validateInput();
+//	}
 
-		final Button addAllButton = new Button(parent, SWT.PUSH);
-		addAllButton.setLayoutData(new GridData(SWT.FILL, SWT.TOP, true, false));
-		addAllButton.setText(WorkingSetMessages.JavaWorkingSetPage_addAll_button);
-		addAllButton.setEnabled(fTree.getTree().getItems().length > 0);
+//	/**
+//	 * Moves the selected elements in the table into the tree
+//	 */
+//	private void removeTableSelection() {
+//		IStructuredSelection selection = (IStructuredSelection) fTable.getSelection();
+//		fSelectedElements.removeAll(selection.toList());
+//		Object[] selectedElements = selection.toArray();
+//		fTable.remove(selectedElements);
+//		try {
+//			fTree.getTree().setRedraw(false);
+//			for (int i = 0; i < selectedElements.length; i++) {
+//				fTree.refresh(fTreeContentProvider.getParent(selectedElements[i]), true);
+//			}
+//		} finally {
+//			fTree.getTree().setRedraw(true);
+//		}
+//		fTree.setSelection(selection);
+//		fTree.getControl().setFocus();
+//		validateInput();
+//	}
 
-		final Button removeButton = new Button(parent, SWT.PUSH);
-		removeButton.setLayoutData(new GridData(SWT.FILL, SWT.TOP, true, false));
-		removeButton.setText(WorkingSetMessages.JavaWorkingSetPage_remove_button);
-		removeButton.setEnabled(!fTable.getSelection().isEmpty());
-
-		final Button removeAllButton = new Button(parent, SWT.PUSH);
-		removeAllButton.setLayoutData(new GridData(SWT.CENTER, SWT.TOP, false, false));
-		removeAllButton.setText(WorkingSetMessages.JavaWorkingSetPage_removeAll_button);
-		removeAllButton.setEnabled(!fSelectedElements.isEmpty());
-
-		fTree.addSelectionChangedListener(new ISelectionChangedListener() {
-			public void selectionChanged(SelectionChangedEvent event) {
-				addButton.setEnabled(!event.getSelection().isEmpty());
-			}
-		});
-
-		addButton.addSelectionListener(new SelectionAdapter() {
-			@Override
-			public void widgetSelected(SelectionEvent e) {
-				addTreeSelection();
-
-				removeAllButton.setEnabled(true);
-				addAllButton.setEnabled(fTree.getTree().getItems().length > 0);
-			}
-		});
-
-		fTree.addDoubleClickListener(new IDoubleClickListener() {
-			public void doubleClick(DoubleClickEvent event) {
-				addTreeSelection();
-
-				removeAllButton.setEnabled(true);
-				addAllButton.setEnabled(fTree.getTree().getItems().length > 0);
-			}
-		});
-
-		fTable.addSelectionChangedListener(new ISelectionChangedListener() {
-			public void selectionChanged(SelectionChangedEvent event) {
-				removeButton.setEnabled(!event.getSelection().isEmpty());
-			}
-		});
-
-		removeButton.addSelectionListener(new SelectionAdapter() {
-			@Override
-			public void widgetSelected(SelectionEvent e) {
-				removeTableSelection();
-
-				addAllButton.setEnabled(true);
-				removeAllButton.setEnabled(!fSelectedElements.isEmpty());
-			}
-		});
-
-		fTable.addDoubleClickListener(new IDoubleClickListener() {
-			public void doubleClick(DoubleClickEvent event) {
-				removeTableSelection();
-
-				addAllButton.setEnabled(true);
-				removeAllButton.setEnabled(!fSelectedElements.isEmpty());
-			}
-		});
-
-		addAllButton.addSelectionListener(new SelectionAdapter() {
-			/*
-			 * (non-Javadoc)
-			 * 
-			 * @see
-			 * org.eclipse.swt.events.SelectionAdapter#widgetSelected(org.eclipse
-			 * .swt.events.SelectionEvent)
-			 */
-			@Override
-			public void widgetSelected(SelectionEvent e) {
-				TreeItem[] items = fTree.getTree().getItems();
-				for (int i = 0; i < items.length; i++) {
-					fSelectedElements.add(items[i].getData());
-				}
-				fTable.refresh();
-				fTree.refresh();
-
-				addAllButton.setEnabled(false);
-				removeAllButton.setEnabled(true);
-			}
-		});
-
-		removeAllButton.addSelectionListener(new SelectionAdapter() {
-			/*
-			 * (non-Javadoc)
-			 * 
-			 * @see
-			 * org.eclipse.swt.events.SelectionAdapter#widgetSelected(org.eclipse
-			 * .swt.events.SelectionEvent)
-			 */
-			@Override
-			public void widgetSelected(SelectionEvent e) {
-				fSelectedElements.clear();
-
-				fTable.refresh();
-				fTree.refresh();
-
-				removeAllButton.setEnabled(false);
-				addAllButton.setEnabled(true);
-			}
-		});
-
-	}
-
-	/**
-	 * Moves selected elements in the tree into the table
-	 */
-	private void addTreeSelection() {
-		IStructuredSelection selection = (IStructuredSelection) fTree.getSelection();
-		fSelectedElements.addAll(selection.toList());
-		Object[] selectedElements = selection.toArray();
-		fTable.add(selectedElements);
-		fTree.remove(selectedElements);
-		fTable.setSelection(selection);
-		fTable.getControl().setFocus();
-		validateInput();
-	}
-
-	/**
-	 * Moves the selected elements in the table into the tree
-	 */
-	private void removeTableSelection() {
-		IStructuredSelection selection = (IStructuredSelection) fTable.getSelection();
-		fSelectedElements.removeAll(selection.toList());
-		Object[] selectedElements = selection.toArray();
-		fTable.remove(selectedElements);
-		try {
-			fTree.getTree().setRedraw(false);
-			for (int i = 0; i < selectedElements.length; i++) {
-				fTree.refresh(fTreeContentProvider.getParent(selectedElements[i]), true);
-			}
-		} finally {
-			fTree.getTree().setRedraw(true);
-		}
-		fTree.setSelection(selection);
-		fTree.getControl().setFocus();
-		validateInput();
-	}
-
-	private void createTable(Composite parent) {
-		Label label = new Label(parent, SWT.WRAP);
-		label.setText(WorkingSetMessages.JavaWorkingSetPage_workingSet_content);
-		label.setLayoutData(new GridData(SWT.FILL, SWT.TOP, true, false));
-
-		fTable = new TableViewer(parent, SWT.BORDER | SWT.H_SCROLL | SWT.V_SCROLL | SWT.MULTI);
-
-		GridData gd = new GridData(SWT.FILL, SWT.FILL, true, true);
-		fTable.getControl().setLayoutData(gd);
-
-		fTable.setUseHashlookup(true);
-
-		configureTable(fTable);
-
-		fTable.setContentProvider(new IStructuredContentProvider() {
-
-			public Object[] getElements(Object inputElement) {
-				return fSelectedElements.toArray();
-			}
-
-			public void dispose() {
-			}
-
-			public void inputChanged(Viewer viewer, Object oldInput, Object newInput) {
-			}
-
-		});
-	}
+//	private void createTable(Composite parent) {
+//		Label label = new Label(parent, SWT.WRAP);
+//		label.setText(WorkingSetMessages.JavaWorkingSetPage_workingSet_content);
+//		label.setLayoutData(new GridData(SWT.FILL, SWT.TOP, true, false));
+//
+//		fTable = new TableViewer(parent, SWT.BORDER | SWT.H_SCROLL | SWT.V_SCROLL | SWT.MULTI);
+//
+//		GridData gd = new GridData(SWT.FILL, SWT.FILL, true, true);
+//		fTable.getControl().setLayoutData(gd);
+//
+//		fTable.setUseHashlookup(true);
+//
+//		configureTable(fTable);
+//
+//		fTable.setContentProvider(new IStructuredContentProvider() {
+//
+//			public Object[] getElements(Object inputElement) {
+//				return fSelectedElements.toArray();
+//			}
+//
+//			public void dispose() {
+//			}
+//
+//			public void inputChanged(Viewer viewer, Object oldInput, Object newInput) {
+//			}
+//
+//		});
+//	}
 
 	/*
 	 * Implements method from IWorkingSetPage

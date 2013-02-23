@@ -13,6 +13,7 @@ import org.eclipse.pde.internal.core.natures.PDE;
  */
 public class PdeUtil {
 
+	@SuppressWarnings("restriction")
 	public static boolean isFeatureProject(IProject project) throws CoreException {
 		return project.hasNature(PDE.FEATURE_NATURE);
 	}
