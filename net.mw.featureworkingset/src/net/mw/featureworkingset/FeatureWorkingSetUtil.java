@@ -10,7 +10,6 @@ import net.mw.featureworkingset.internal.jdt.PdeUtil;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.pde.core.plugin.IPluginModelBase;
 import org.eclipse.pde.core.plugin.ModelEntry;
 import org.eclipse.pde.core.plugin.PluginRegistry;
@@ -20,11 +19,28 @@ public class FeatureWorkingSetUtil {
 	
 	public static void checkFeatureProject(IProject project) throws CoreException {
 		if (!PdeUtil.isFeatureProject(project)) {
-			throw new IllegalArgumentException("project is not a feature project");
+			throw new IllegalArgumentException("project is not a feature project"); //$NON-NLS-1$
 		}
 	}
 	
-	public static IProject[] getIncludedPluginProjects(IProject project) throws CoreException {
+	public static IProject[] getFeatureWorkingsetContents(IProject featureProject) {
+		if (!featureProject.exists()) {
+			return new IProject[] {};
+		}
+		
+		if (!featureProject.isOpen()) {
+			return new IProject[] {};
+		}
+		
+		try {
+			return FeatureWorkingSetUtil.getIncludedPluginProjects(featureProject);
+		} catch (CoreException e) {
+			FeatureWorkingSetPlugin.getDefault().getLog().log(e.getStatus());
+			return new IProject[] {};
+		}
+	}
+	
+	private static IProject[] getIncludedPluginProjects(IProject project) throws CoreException {
 		checkFeatureProject(project);
 		
 		List<IProject> result = new ArrayList<IProject>();
@@ -52,17 +68,11 @@ public class FeatureWorkingSetUtil {
 		return result.toArray(new IProject[result.size()]);
 	}
 
-	public static List<IProject> getFeatureProjects(IWorkingSet workingSet) throws CoreException {
-		List<IProject> result = new ArrayList<IProject>();
-		
-		for (IAdaptable adaptable : workingSet.getElements()) {
-			IProject project = (IProject) adaptable.getAdapter(IProject.class);
-			
-			if (project != null && PdeUtil.isFeatureProject(project)) {
-				result.add(project);
-			}
-		}
-		
-		return result;
+	public static IProject getFeatureProject(final IWorkingSet workingSet) {
+		String featureId = workingSet.getName();
+		final IProject featureProject = ResourcesPlugin.getWorkspace().getRoot().getProject(featureId);
+		return featureProject;
 	}
+
+	
 }

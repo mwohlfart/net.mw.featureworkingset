@@ -19,10 +19,12 @@ import org.eclipse.jdt.ui.JavaElementComparator;
 import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.ISelectionChangedListener;
+import org.eclipse.jface.viewers.IStructuredContentProvider;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.viewers.ITreeContentProvider;
 import org.eclipse.jface.viewers.SelectionChangedEvent;
 import org.eclipse.jface.viewers.StructuredSelection;
+import org.eclipse.jface.viewers.TableViewer;
 import org.eclipse.jface.viewers.TreeViewer;
 import org.eclipse.jface.viewers.Viewer;
 import org.eclipse.jface.viewers.ViewerFilter;
@@ -48,8 +50,17 @@ public class FeatureWorkingSetPage extends WizardPage implements
 
 		@Override
 		public boolean select(Viewer viewer, Object parentElement, Object element) {
-			// TODO: implement
-			return true;
+			if (element instanceof IProject) {
+				IProject project = (IProject) element;
+				
+				if (project.getName().equals(fWorkingSet.getName())) {
+					return true;
+				} else {
+					IWorkingSetManager workingSetManager = PlatformUI.getWorkbench().getWorkingSetManager();
+					return workingSetManager.getWorkingSet(project.getName()) == null;
+				}
+			}
+			return false;
 		}
 
 	}
@@ -117,8 +128,12 @@ public class FeatureWorkingSetPage extends WizardPage implements
 	private IProject selectedFeatureProject;
 	private IWorkingSet fWorkingSet;
 
+	private TableViewer fTable;
+
 	public FeatureWorkingSetPage() {
-		super("featureWorkingSetPage", "Feature Working Set", null);
+		super("featureWorkingSetPage", Messages.FeatureWorkingSetPage_title, null); //$NON-NLS-1$
+		
+		setDescription(Messages.FeatureWorkingSetPage_workingset_page_description);
 	}
 
 	private void configureTree(TreeViewer tree) {
@@ -136,18 +151,41 @@ public class FeatureWorkingSetPage extends WizardPage implements
 		initializeDialogUnits(parent);
 
 		Composite composite = new Composite(parent, SWT.NONE);
-		composite.setLayout(new GridLayout());
+		composite.setLayout(new GridLayout(2, false));
 		composite.setLayoutData(new GridData(GridData.HORIZONTAL_ALIGN_FILL));
 		setControl(composite);
+		
+		Composite leftComposite= new Composite(composite, SWT.NONE);
+		GridData gridData= new GridData(SWT.FILL, SWT.FILL, true, true);
+		gridData.widthHint= convertWidthInCharsToPixels(40);
+		leftComposite.setLayoutData(gridData);
+		GridLayout gridLayout = new GridLayout(1, false);
+		gridLayout.marginHeight= 0;
+		gridLayout.marginWidth= 0;
+		leftComposite.setLayout(gridLayout);
+		
+		Composite rightComposite= new Composite(composite, SWT.NONE);
+		gridData= new GridData(SWT.FILL, SWT.FILL, true, true);
+		gridData.widthHint= convertWidthInCharsToPixels(40);
+		rightComposite.setLayoutData(gridData);
+		gridLayout= new GridLayout(1, false);
+		gridLayout.marginHeight= 0;
+		gridLayout.marginWidth= 0;
+		rightComposite.setLayout(gridLayout);
 
-		Label label = new Label(composite, SWT.WRAP);
-		label.setText("Select Feature Project from Workspace:");
+		Label label = new Label(leftComposite, SWT.WRAP);
+		label.setText(Messages.FeatureWorkingSetPage_workingset_selection_label);
 		GridData gd = new GridData(GridData.GRAB_HORIZONTAL
 				| GridData.HORIZONTAL_ALIGN_FILL
 				| GridData.VERTICAL_ALIGN_CENTER);
 		label.setLayoutData(gd);
+		
+		label= new Label(rightComposite, SWT.WRAP);
+		label.setText(Messages.FeatureWorkingSetPage_workingset_content_label);
+		label.setLayoutData(new GridData(SWT.FILL, SWT.TOP, true, false));
 
-		createTree(composite);
+		createTree(leftComposite);
+		createTable(rightComposite);
 
 		initializeSelectedElements();
 		validateInput();
@@ -161,6 +199,39 @@ public class FeatureWorkingSetPage extends WizardPage implements
 
 		Dialog.applyDialogFont(composite);
 
+	}
+
+	private void createTable(Composite parent) {
+		fTable= new TableViewer(parent, SWT.BORDER | SWT.H_SCROLL | SWT.V_SCROLL | SWT.MULTI);
+		fTable.getTable().setEnabled(false);
+
+		GridData gd= new GridData(SWT.FILL, SWT.FILL, true, true);
+		fTable.getControl().setLayoutData(gd);
+
+		fTable.setUseHashlookup(true);
+		
+		configureTable(fTable);
+		
+		fTable.setContentProvider(new IStructuredContentProvider() {
+
+			public Object[] getElements(Object inputElement) {
+				return FeatureWorkingSetUtil.getFeatureWorkingsetContents(selectedFeatureProject);
+			}
+
+			public void dispose() {
+			}
+
+			public void inputChanged(Viewer viewer, Object oldInput, Object newInput) {
+				viewer.refresh();
+			}
+
+		});
+		
+	}
+
+	private static void configureTable(TableViewer table) {
+		table.setLabelProvider(JdtUtil.getTreeLabelProvider());
+		table.setComparator(new JavaElementComparator());
 	}
 
 	private void initializeSelectedElements() {
@@ -188,6 +259,8 @@ public class FeatureWorkingSetPage extends WizardPage implements
 				ISelection selection = fTree.getSelection();
 				IStructuredSelection ssel = (IStructuredSelection) selection;
 				selectedFeatureProject = (IProject) ssel.getFirstElement();
+				
+				fTable.setInput(selectedFeatureProject);
 			}
 		});
 	}
@@ -231,7 +304,7 @@ public class FeatureWorkingSetPage extends WizardPage implements
 		String infoMessage = null;
 
 		if (!hasSelectedElement())
-			infoMessage = "Feature Project must be selected";
+			infoMessage = Messages.FeatureWorkingSetPage_no_project_selected_error;
 
 		setMessage(infoMessage, INFORMATION);
 		setErrorMessage(errorMessage);

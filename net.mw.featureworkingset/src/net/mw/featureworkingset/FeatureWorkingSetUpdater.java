@@ -14,8 +14,6 @@ import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IResourceDelta;
-import org.eclipse.core.resources.ResourcesPlugin;
-import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jdt.core.ElementChangedEvent;
 import org.eclipse.jdt.core.IElementChangedListener;
 import org.eclipse.jdt.core.JavaCore;
@@ -42,7 +40,7 @@ public class FeatureWorkingSetUpdater implements IWorkingSetUpdater, IElementCha
 	
 	private List<IFeatureWorkingSet> fWorkingSets;
 	
-	private static IFeatureWorkingSet createWorkingSet(final IWorkingSet workingSet) {
+	private static IFeatureWorkingSet createFeatureWorkingSet(final IWorkingSet workingSet) {
 		
 		IFeatureWorkingSet result = new IFeatureWorkingSet() {
 			
@@ -58,37 +56,17 @@ public class FeatureWorkingSetUpdater implements IWorkingSetUpdater, IElementCha
 			
 			@Override
 			public IProject getFeatureProject() {
-				return FeatureWorkingSetUpdater.getFeatureProject(workingSet);
+				return FeatureWorkingSetUtil.getFeatureProject(workingSet);
 			}
 			
 			@Override
 			public IProject[] getChildren() {
 				IProject featureProject = getFeatureProject();
-				
-				if (!featureProject.exists()) {
-					return new IProject[] {};
-				}
-				
-				if (!featureProject.isOpen()) {
-					return new IProject[] {};
-				}
-				
-				try {
-					return FeatureWorkingSetUtil.getIncludedPluginProjects(featureProject);
-				} catch (CoreException e) {
-					FeatureWorkingSetPlugin.getDefault().getLog().log(e.getStatus());
-					return new IProject[] {};
-				}
+				return FeatureWorkingSetUtil.getFeatureWorkingsetContents(featureProject);
 			}
 		};
 		
 		return result;
-	}
-
-	private static IProject getFeatureProject(final IWorkingSet workingSet) {
-		String featureId = workingSet.getName();
-		final IProject featureProject = ResourcesPlugin.getWorkspace().getRoot().getProject(featureId);
-		return featureProject;
 	}
 
 	private static void updateFeatureWorkingSet(IFeatureWorkingSet featureWorkingSet) {
@@ -97,7 +75,7 @@ public class FeatureWorkingSetUpdater implements IWorkingSetUpdater, IElementCha
 	}
 
 	private static boolean isFeatureFileChange(IResource resource, int kind) {
-		return kind == IResourceDelta.CHANGED && (resource instanceof IFile) && ((IFile)resource).getName().equals("feature.xml");
+		return kind == IResourceDelta.CHANGED && (resource instanceof IFile) && ((IFile)resource).getName().equals("feature.xml"); //$NON-NLS-1$
 	}
 
 	private static boolean isProjectOpenStateChange(IResource resource, int kind, int flags) {
@@ -157,7 +135,7 @@ public class FeatureWorkingSetUpdater implements IWorkingSetUpdater, IElementCha
 	 */
 	public void add(IWorkingSet workingSet) {
 		synchronized (fWorkingSets) {
-			IFeatureWorkingSet featureWorkingSet = createWorkingSet(workingSet);
+			IFeatureWorkingSet featureWorkingSet = createFeatureWorkingSet(workingSet);
 			fWorkingSets.add(featureWorkingSet);
 			
 			// TODO Workaround! working sets are not available in WorkingSetModel if they do not contain elements -> do not update here but where the working set is created.  
