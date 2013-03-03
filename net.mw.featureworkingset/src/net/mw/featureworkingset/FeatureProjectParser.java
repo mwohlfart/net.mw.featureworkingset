@@ -8,6 +8,7 @@ import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.parsers.SAXParser;
 import javax.xml.parsers.SAXParserFactory;
 
+import net.mw.featureworkingset.FeatureProjectParser.IFeature.IContainedFeature;
 import net.mw.featureworkingset.FeatureProjectParser.IFeature.IPluginEntry;
 
 import org.eclipse.core.resources.IFile;
@@ -28,29 +29,34 @@ public class FeatureProjectParser {
 			String getId();
 		}
 
+		public interface IContainedFeature {
+			String getId();
+		}
+
 		String getFeatureId();
 
 		String getFeatureLabel();
 
 		IPluginEntry[] getPluginEntries();
+
+		IContainedFeature[] getContainedFeatures();
 	}
-	
+
 	public static IFeature parseFeature(IProject featureProject)
 			throws CoreException {
-		
+
 		checkFeatureProject(featureProject);
-		
+
 		IFile file = featureProject.getFile(new Path("feature.xml"));
-		
+
 		return parseFeature(file);
 	}
-	
+
 	private static void checkFeatureProject(IProject featureProject) {
 		if (!featureProject.exists(new Path("feature.xml"))) {
 			throw new IllegalArgumentException("feature.xml not found");
 		}
 	}
-
 
 	private static IFeature parseFeature(IFile featureXmlFile)
 			throws CoreException {
@@ -61,13 +67,16 @@ public class FeatureProjectParser {
 			return featureXmlHandler.getContent();
 		} catch (ParserConfigurationException e) {
 			throw new CoreException(new Status(IStatus.ERROR,
-					FeatureWorkingSetPlugin.PLUGIN_ID, "Error parsing feature.xml", e));
+					FeatureWorkingSetPlugin.PLUGIN_ID,
+					"Error parsing feature.xml", e));
 		} catch (SAXException e) {
 			throw new CoreException(new Status(IStatus.ERROR,
-					FeatureWorkingSetPlugin.PLUGIN_ID, "Error parsing feature.xml", e));
+					FeatureWorkingSetPlugin.PLUGIN_ID,
+					"Error parsing feature.xml", e));
 		} catch (IOException e) {
 			throw new CoreException(new Status(IStatus.ERROR,
-					FeatureWorkingSetPlugin.PLUGIN_ID, "Error parsing feature.xml", e));
+					FeatureWorkingSetPlugin.PLUGIN_ID,
+					"Error parsing feature.xml", e));
 		}
 	}
 
@@ -76,6 +85,7 @@ public class FeatureProjectParser {
 		private String id;
 		private String label;
 		private List<IPluginEntry> pluginEntries = new ArrayList<IPluginEntry>();
+		private List<IContainedFeature> featureEntries = new ArrayList<IContainedFeature>();
 
 		@Override
 		public void startElement(String uri, String localName, String qName,
@@ -91,6 +101,17 @@ public class FeatureProjectParser {
 				});
 			}
 
+			if ("includes".equals(qName)) {
+				final String featureId = attributes.getValue("id");
+				featureEntries.add(new IContainedFeature() {
+
+					@Override
+					public String getId() {
+						return featureId;
+					}
+				});
+			}
+
 			if ("feature".equals(qName)) {
 				id = attributes.getValue("id");
 				label = attributes.getValue("label");
@@ -99,7 +120,6 @@ public class FeatureProjectParser {
 
 		public IFeature getContent() {
 			return new IFeature() {
-
 
 				@Override
 				public IPluginEntry[] getPluginEntries() {
@@ -115,6 +135,13 @@ public class FeatureProjectParser {
 				@Override
 				public String getFeatureId() {
 					return id;
+				}
+
+				@Override
+				public IContainedFeature[] getContainedFeatures() {
+					return featureEntries
+							.toArray(new IContainedFeature[featureEntries
+									.size()]);
 				}
 			};
 		}

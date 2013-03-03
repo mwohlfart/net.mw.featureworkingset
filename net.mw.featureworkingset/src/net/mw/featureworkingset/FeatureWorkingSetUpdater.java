@@ -172,8 +172,10 @@ public class FeatureWorkingSetUpdater implements IWorkingSetUpdater, IElementCha
 	public void elementChanged(ElementChangedEvent event) {
 		IResourceDelta[] resourceDeltas = event.getDelta().getResourceDeltas();
 		
-		for (IResourceDelta resourceDelta : resourceDeltas) {
-			processResourceDelta(resourceDelta);
+		if (resourceDeltas != null) {
+			for (IResourceDelta resourceDelta : resourceDeltas) {
+				processResourceDelta(resourceDelta);
+			}
 		}
 		
 	}

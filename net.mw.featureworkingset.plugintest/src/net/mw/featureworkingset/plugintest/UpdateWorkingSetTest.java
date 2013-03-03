@@ -160,7 +160,8 @@ public class UpdateWorkingSetTest {
 
 	private static class FeatureProjectBuilder extends ProjectBuilder {
 
-		private Set<String> references = new HashSet<String>();
+		private Set<String> plugins = new HashSet<String>();
+		private Set<String> features = new HashSet<String>();
 		private String label;
 
 		public FeatureProjectBuilder(String name) {
@@ -208,11 +209,17 @@ public class UpdateWorkingSetTest {
 			featureParameters.put("id", name);
 			featureParameters.put("label", label);
 			writer.startTag("feature", featureParameters);
-			for (String reference : references) {
+			for (String reference : plugins) {
 				HashMap<String, Object> pluginParameters = new HashMap<String, Object>();
 				pluginParameters.put("id", reference);
 				writer.printTag("plugin", pluginParameters);
 				writer.endTag("plugin");
+			}
+			for (String reference : features) {
+				HashMap<String, Object> includedFeatureParameters = new HashMap<String, Object>();
+				includedFeatureParameters.put("id", reference);
+				writer.printTag("includes", includedFeatureParameters);
+				writer.endTag("includes");
 			}
 			writer.endTag("feature");
 
@@ -229,7 +236,7 @@ public class UpdateWorkingSetTest {
 
 		public FeatureProjectBuilder addIncludedPlugin(String... pluginIds) {
 			for (String pluginId : pluginIds) {
-				references.add(pluginId);
+				plugins.add(pluginId);
 			}
 			return this;
 		}
@@ -242,7 +249,14 @@ public class UpdateWorkingSetTest {
 
 		public FeatureProjectBuilder removeIncludedPlugin(String... string) {
 			for (String pluginId : string) {
-				references.remove(pluginId);
+				plugins.remove(pluginId);
+			}
+			return this;
+		}
+
+		public FeatureProjectBuilder addIncludedFeature(String... featureIds) {
+			for (String featureId : featureIds) {
+				features.add(featureId);
 			}
 			return this;
 		}
@@ -280,6 +294,8 @@ public class UpdateWorkingSetTest {
 			IWorkingSet workingSet = manager.createWorkingSet(name, elements);
 			workingSet.setId("net.mw.featureworkingset");
 			manager.addWorkingSet(workingSet);
+			
+			workingSet.setElements(new IAdaptable[0]);
 
 			return workingSet;
 		}
@@ -302,6 +318,41 @@ public class UpdateWorkingSetTest {
 	public void setUp() throws Exception {
 		TestFixture.clearWorkspace();
 		TestFixture.clearWorkingSetsFromManager();
+	}
+
+	@Test
+	public void testInitialContents() throws Exception {
+		// setup
+		IProject includedPluginProject = TestFixture.createPluginProject("TestProject");
+		IProject includedFeatureProject = new FeatureProjectBuilder("TestFeature").create();
+	
+		FeatureProjectBuilder featureProjectBuilder = new FeatureProjectBuilder(
+				"ParentFeature");
+		featureProjectBuilder.addIncludedPlugin("TestProject").addIncludedFeature("TestFeature").create();
+	
+		// test
+		IWorkingSet workingSet = TestFixture.createFeatureWorkingSet(
+				"ParentFeature", new IAdaptable[] {});
+	
+		// assert
+		Assert.assertEquals(2, workingSet.getElements().length);
+		Assert.assertEquals(includedPluginProject, workingSet.getElements()[0]);
+		Assert.assertEquals(includedFeatureProject, workingSet.getElements()[1]);
+	}
+
+	@Test
+	public void testContentNotAvailableInWorkspace() throws Exception {
+		// setup
+		FeatureProjectBuilder featureProjectBuilder = new FeatureProjectBuilder(
+				"TestFeature");
+		featureProjectBuilder.addIncludedPlugin("UnavailablePlugin").addIncludedFeature("UnavailableFeature").create();
+	
+		// test
+		IWorkingSet workingSet = TestFixture.createFeatureWorkingSet(
+				"TestFeature", new IAdaptable[] {});
+	
+		// assert
+		Assert.assertEquals(2, workingSet.getElements().length);
 	}
 
 	@Test
@@ -429,8 +480,7 @@ public class UpdateWorkingSetTest {
 		TestFixture.createPluginProject("TestProject1");
 		FeatureProjectBuilder featureProjectBuilder = new FeatureProjectBuilder(
 				"TestFeature");
-		featureProjectBuilder
-				.addIncludedPlugin("TestProject")
+		featureProjectBuilder.addIncludedPlugin("TestProject")
 				.addIncludedPlugin("TestProject1").create();
 
 		IWorkingSet workingSet = TestFixture.createFeatureWorkingSet(
@@ -438,7 +488,7 @@ public class UpdateWorkingSetTest {
 
 		// test
 		pluginProject.close(new NullProgressMonitor());
-		
+
 		Thread.sleep(1000);
 
 		// assert
