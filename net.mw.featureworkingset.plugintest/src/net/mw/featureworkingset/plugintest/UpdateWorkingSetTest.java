@@ -116,6 +116,7 @@ public class UpdateWorkingSetTest {
 		}
 
 		private void updateManifest(IProject project) throws Exception {
+			@SuppressWarnings("restriction")
 			IFile manifest = PDEProject.getManifest(project);
 
 			ensureExists(manifest.getParent());
