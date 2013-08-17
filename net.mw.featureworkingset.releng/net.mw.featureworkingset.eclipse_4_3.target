@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<?pde version="3.8"?>
+
+<target name="Restored Target" sequenceNumber="19">
+<locations>
+<location includeAllPlatforms="false" includeConfigurePhase="true" includeMode="slicer" includeSource="true" type="InstallableUnit">
+<unit id="org.eclipse.sdk.ide" version="4.3.0.I20130605-2000"/>
+<unit id="org.eclipse.platform.sdk" version="4.3.0.I20130605-2000"/>
+<repository location="http://repos/p2/mirrors/eclipse/updates/4.3/"/>
+</location>
+<location includeAllPlatforms="false" includeConfigurePhase="true" includeMode="slicer" includeSource="true" type="InstallableUnit">
+<unit id="org.eclipse.jgit.feature.group" version="3.0.0.201306101825-r"/>
+<unit id="org.eclipse.emf.sdk.feature.group" version="2.9.0.v20130610-0406"/>
+<unit id="org.eclipse.egit.feature.group" version="3.0.0.201306101825-r"/>
+<repository location="http://download.eclipse.org/releases/kepler"/>
+</location>
+</locations>
+<environment>
+<os>win32</os>
+<ws>win32</ws>
+<arch>x86</arch>
+<nl>de_AT</nl>
+</environment>
+</target>

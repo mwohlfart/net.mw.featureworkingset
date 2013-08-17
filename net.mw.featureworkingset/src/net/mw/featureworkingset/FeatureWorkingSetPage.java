@@ -215,7 +215,7 @@ public class FeatureWorkingSetPage extends WizardPage implements
 		fTable.setContentProvider(new IStructuredContentProvider() {
 
 			public Object[] getElements(Object inputElement) {
-				return FeatureWorkingSetUtil.getFeatureWorkingsetContents(selectedFeatureProject);
+				return FeatureWorkingSetUtil.getFeatureWorkingSetContents(selectedFeatureProject);
 			}
 
 			public void dispose() {

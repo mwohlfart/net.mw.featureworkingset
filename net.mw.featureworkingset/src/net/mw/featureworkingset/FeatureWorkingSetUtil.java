@@ -1,7 +1,7 @@
 package net.mw.featureworkingset;
 
 import java.util.ArrayList;
-import java.util.Collection;
+import java.util.Arrays;
 import java.util.List;
 
 import net.mw.featureworkingset.FeatureProjectParser.IFeature;
@@ -12,6 +12,8 @@ import net.mw.featureworkingset.internal.jdt.PdeUtil;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IAdaptable;
+import org.eclipse.core.runtime.PlatformObject;
 import org.eclipse.pde.core.plugin.IPluginModelBase;
 import org.eclipse.pde.core.plugin.ModelEntry;
 import org.eclipse.pde.core.plugin.PluginRegistry;
@@ -19,7 +21,49 @@ import org.eclipse.ui.IWorkingSet;
 
 public class FeatureWorkingSetUtil {
 
-	public static void checkFeatureProject(IProject project)
+	public static void updateFeatureWorkingSet(
+			IFeatureWorkingSet featureWorkingSet) {
+		IProject[] children = featureWorkingSet.getChildren();
+		featureWorkingSet.getWorkingSet().setElements(children);
+	}
+
+	public static IFeatureWorkingSet createFeatureWorkingSet(
+			final IWorkingSet workingSet) {
+
+		IFeatureWorkingSet result = new IFeatureWorkingSet() {
+
+			@Override
+			public IWorkingSet getWorkingSet() {
+				return workingSet;
+			}
+
+			@Override
+			public String getWorkingSetName() {
+				return workingSet.getName();
+			}
+
+			@Override
+			public IProject getFeatureProject() {
+				return FeatureWorkingSetUtil.getFeatureProject(workingSet);
+			}
+
+			@Override
+			public IProject[] getChildren() {
+				IProject featureProject = getFeatureProject();
+				return FeatureWorkingSetUtil
+						.getFeatureWorkingSetContents(featureProject);
+			}
+
+			@Override
+			public boolean contains(IProject project) {
+				return Arrays.asList(getChildren()).contains(project);
+			}
+		};
+
+		return result;
+	}
+
+	private static void checkFeatureProject(IProject project)
 			throws CoreException {
 		if (!PdeUtil.isFeatureProject(project)) {
 			throw new IllegalArgumentException(
@@ -27,7 +71,7 @@ public class FeatureWorkingSetUtil {
 		}
 	}
 
-	public static IProject[] getFeatureWorkingsetContents(
+	public static IProject[] getFeatureWorkingSetContents(
 			IProject featureProject) {
 
 		if (!featureProject.exists()) {
@@ -38,7 +82,7 @@ public class FeatureWorkingSetUtil {
 			return new IProject[] {};
 		}
 
-		List<IProject> result = new ArrayList<IProject>();
+		List<IAdaptable> result = new ArrayList<IAdaptable>();
 
 		try {
 			checkFeatureProject(featureProject);
@@ -72,10 +116,10 @@ public class FeatureWorkingSetUtil {
 		return result;
 	}
 
-	private static List<IProject> getIncludedPluginProjects(
+	private static List<IAdaptable> getIncludedPluginProjects(
 			IFeature featureContent) throws CoreException {
 
-		List<IProject> result = new ArrayList<IProject>();
+		List<IAdaptable> result = new ArrayList<IAdaptable>();
 
 		for (IPluginEntry entry : featureContent.getPluginEntries()) {
 			IProject project = findProject(entry.getId());
@@ -106,7 +150,7 @@ public class FeatureWorkingSetUtil {
 		return null;
 	}
 
-	public static IProject getFeatureProject(final IWorkingSet workingSet) {
+	private static IProject getFeatureProject(final IWorkingSet workingSet) {
 		String featureId = workingSet.getName();
 		final IProject featureProject = ResourcesPlugin.getWorkspace()
 				.getRoot().getProject(featureId);
