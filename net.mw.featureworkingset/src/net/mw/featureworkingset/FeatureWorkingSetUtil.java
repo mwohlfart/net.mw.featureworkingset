@@ -11,14 +11,18 @@ import net.mw.featureworkingset.FeatureProjectParser.IFeature.IPluginEntry;
 import net.mw.featureworkingset.internal.jdt.PdeUtil;
 
 import org.eclipse.core.resources.IProject;
+import org.eclipse.core.resources.IProjectDescription;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IAdaptable;
+import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.PlatformObject;
 import org.eclipse.pde.core.plugin.IPluginModelBase;
 import org.eclipse.pde.core.plugin.ModelEntry;
 import org.eclipse.pde.core.plugin.PluginRegistry;
 import org.eclipse.ui.IWorkingSet;
+
+import sun.net.ProgressMonitor;
 
 public class FeatureWorkingSetUtil {
 
@@ -36,6 +40,13 @@ public class FeatureWorkingSetUtil {
 		String message = "Updating feature working set (name={0})";
 		message = MessageFormat.format(message,
 				featureWorkingSet.getWorkingSetName());
+		FeatureWorkingSetPlugin.getDefault().getDebugTrace()
+				.trace("/debug", message);
+	}
+
+	private static void traceProjectNotFound(String id) {
+		String message = "Project not found (name={0})";
+		message = MessageFormat.format(message, id);
 		FeatureWorkingSetPlugin.getDefault().getDebugTrace()
 				.trace("/debug", message);
 	}
@@ -125,7 +136,7 @@ public class FeatureWorkingSetUtil {
 	}
 
 	private static List<IProject> getIncludedFeatureProjects(
-			IFeature featureContent) {
+			IFeature featureContent) throws CoreException {
 		List<IProject> result = new ArrayList<IProject>();
 
 		for (IContainedFeature entry : featureContent.getContainedFeatures()) {
@@ -164,12 +175,21 @@ public class FeatureWorkingSetUtil {
 				return workspaceModel.getUnderlyingResource().getProject();
 			}
 
-		} else {
-			 IProject unavailableProject = ResourcesPlugin.getWorkspace()
-			 .getRoot().getProject(id);
-			 return unavailableProject;
 		}
-		return null;
+
+		IProject featureOrUnavailableProject = ResourcesPlugin.getWorkspace()
+				.getRoot().getProject(id);
+
+		if (!featureOrUnavailableProject.isAccessible()) {
+			try {
+				featureOrUnavailableProject.close(new NullProgressMonitor());
+			} catch (CoreException e) {
+				traceProjectNotFound(id);
+			}
+		}
+
+
+		return featureOrUnavailableProject;
 	}
 
 	private static IProject getFeatureProject(final IWorkingSet workingSet) {
