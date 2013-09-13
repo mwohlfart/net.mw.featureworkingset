@@ -103,7 +103,9 @@ public class FeatureWorkingSetUpdater implements IWorkingSetUpdater {
 						
 						if (WorkingSetUtil.isFeatureWorkingSet(workingSet)) {
 							IFeatureWorkingSet featureWorkingSet = internalGetFeatureWorkingSet(workingSet);
-							FeatureWorkingSetUtil.updateFeatureWorkingSet(featureWorkingSet);
+							if (featureWorkingSet != null) {
+								FeatureWorkingSetUtil.updateFeatureWorkingSet(featureWorkingSet);
+							}
 						}
 					}
 				}

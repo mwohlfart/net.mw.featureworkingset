@@ -1,5 +1,6 @@
 package net.mw.featureworkingset;
 
+import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -23,12 +24,26 @@ public class FeatureWorkingSetUtil {
 
 	public static void updateFeatureWorkingSet(
 			IFeatureWorkingSet featureWorkingSet) {
+
+		traceUpdatingWorkingSet(featureWorkingSet);
+
 		IProject[] children = featureWorkingSet.getChildren();
 		featureWorkingSet.getWorkingSet().setElements(children);
 	}
 
+	private static void traceUpdatingWorkingSet(
+			IFeatureWorkingSet featureWorkingSet) {
+		String message = "Updating feature working set (name={0})";
+		message = MessageFormat.format(message,
+				featureWorkingSet.getWorkingSetName());
+		FeatureWorkingSetPlugin.getDefault().getDebugTrace()
+				.trace("/debug", message);
+	}
+
 	public static IFeatureWorkingSet createFeatureWorkingSet(
 			final IWorkingSet workingSet) {
+
+		traceCreatingWorkingSet(workingSet);
 
 		IFeatureWorkingSet result = new IFeatureWorkingSet() {
 
@@ -63,6 +78,13 @@ public class FeatureWorkingSetUtil {
 		return result;
 	}
 
+	private static void traceCreatingWorkingSet(IWorkingSet workingSet) {
+		String message = "Updating feature working set (name={0})";
+		message = MessageFormat.format(message, workingSet.getName());
+		FeatureWorkingSetPlugin.getDefault().getDebugTrace()
+				.trace("/debug", message);
+	}
+
 	private static void checkFeatureProject(IProject project)
 			throws CoreException {
 		if (!PdeUtil.isFeatureProject(project)) {
@@ -82,7 +104,7 @@ public class FeatureWorkingSetUtil {
 			return new IProject[] {};
 		}
 
-		List<IAdaptable> result = new ArrayList<IAdaptable>();
+		List<IProject> result = new ArrayList<IProject>();
 
 		try {
 			checkFeatureProject(featureProject);
@@ -116,10 +138,10 @@ public class FeatureWorkingSetUtil {
 		return result;
 	}
 
-	private static List<IAdaptable> getIncludedPluginProjects(
+	private static List<IProject> getIncludedPluginProjects(
 			IFeature featureContent) throws CoreException {
 
-		List<IAdaptable> result = new ArrayList<IAdaptable>();
+		List<IProject> result = new ArrayList<IProject>();
 
 		for (IPluginEntry entry : featureContent.getPluginEntries()) {
 			IProject project = findProject(entry.getId());
@@ -131,7 +153,7 @@ public class FeatureWorkingSetUtil {
 		return result;
 	}
 
-	private static IProject findProject(String id) {
+	private static IProject findProject(final String id) {
 		ModelEntry foundEntry = PluginRegistry.findEntry(id);
 
 		if (foundEntry != null) {
@@ -143,9 +165,9 @@ public class FeatureWorkingSetUtil {
 			}
 
 		} else {
-			IProject unavailableProject = ResourcesPlugin.getWorkspace()
-					.getRoot().getProject(id);
-			return unavailableProject;
+			 IProject unavailableProject = ResourcesPlugin.getWorkspace()
+			 .getRoot().getProject(id);
+			 return unavailableProject;
 		}
 		return null;
 	}
@@ -155,6 +177,20 @@ public class FeatureWorkingSetUtil {
 		final IProject featureProject = ResourcesPlugin.getWorkspace()
 				.getRoot().getProject(featureId);
 		return featureProject;
+	}
+
+	public static class UnresolvedBundle extends PlatformObject {
+
+		private String id;
+
+		public UnresolvedBundle(String id) {
+			this.id = id;
+		}
+
+		@Override
+		public String toString() {
+			return id;
+		}
 	}
 
 }
