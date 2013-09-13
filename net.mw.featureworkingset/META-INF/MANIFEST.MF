@@ -16,7 +16,7 @@ Require-Bundle: org.eclipse.core.runtime,
  org.eclipse.ui,
  org.eclipse.jdt.ui,
  org.eclipse.jdt.core,
- org.eclipse.osgi.services;bundle-version="3.3.100"
+ org.eclipse.osgi.services
 Bundle-ActivationPolicy: lazy
 Export-Package: net.mw.featureworkingset
 Bundle-RequiredExecutionEnvironment: JavaSE-1.6
